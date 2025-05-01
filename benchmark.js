@@ -55,8 +55,7 @@
 import fs from "fs";
 import { TaintTracker } from "../aran-taint-analysis/index.js";
 import { ANALYSIS_TYPES } from "../aran-taint-analysis/utils/config.js";
-import { fillTaintFunctions, taintMethods } from "./setup.js";
-const benchmarks = ["spectral-norm"];
+import setup, { benchmarks, fillTaintFunctions, taintMethods } from "./setup.js";
 
 const BenchmarkTypeJs = {
     NOT_INSTRUMENTED: "not-instrumented",
@@ -64,7 +63,7 @@ const BenchmarkTypeJs = {
     INSTRUMENTED_LINVAIL: "instrumented-linvail",
     INSTRUMENTED_TAINT_ANALYSIS: "instrumented-taint-analysis",
 };
-const benchmarkTypeToAnalysisType = (benchmarkTypeJs) => {
+const benchmarkJsTypeToAnalysisType = (benchmarkTypeJs) => {
     switch (benchmarkTypeJs) {
         case BenchmarkTypeJs.NOT_INSTRUMENTED:
             return ANALYSIS_TYPES.NO_ANALYSIS;
@@ -86,56 +85,79 @@ const BenchmarkTypeWasm = {
     INSTRUMENTED_TAINT_ANALYSIS: "instrumented-taint-analysis",
 };
 
-export default async function runBenchmark(benchmarkName) {
-    await runWasmBenchmark(benchmarkName);
-    await runJsBenchmark(benchmarkName);
-    // runInteropBenchmark(benchmarkName);
+const BenchmarkTypeInterop = {
+    NOT_INSTRUMENTED: "not-instrumented",
+    INSTRUMENTED_FORWARD_ANALYSIS: "instrumented-forward-analysis",
+    INSTRUMENTED_TAINT_ANALYSIS_JS: "instrumented-taint-analysis-js",
+    INSTRUMENTED_TAINT_ANALYSIS_WASM: "instrumented-taint-analysis-wasm",
+    INSTRUMENTED_TAINT_ANALYSIS_BOTH: "instrumented-taint-analysis-both",
+};
+
+const benchmarkInteropTypeToAnalysisType = (benchmarkTypeInterop) => {
+    switch (benchmarkTypeInterop) {
+        case BenchmarkTypeInterop.NOT_INSTRUMENTED:
+            return ANALYSIS_TYPES.NO_ANALYSIS;
+        case BenchmarkTypeInterop.INSTRUMENTED_FORWARD_ANALYSIS:
+            return ANALYSIS_TYPES.FORWARD_ANALYSIS;
+        case BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_JS:
+            return ANALYSIS_TYPES.TAINT_ANALYSIS;
+        case BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_WASM:
+            return ANALYSIS_TYPES.NO_ANALYSIS;
+        case BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_BOTH:
+            return ANALYSIS_TYPES.TAINT_ANALYSIS;
+        default:
+            throw new Error(`Unknown benchmark type: ${benchmarkTypeInterop}`);
+    }
+};
+
+export default async function runBenchmark(benchmark) {
+    // await runWasmBenchmark(benchmark);
+    // await runJsBenchmark(benchmark);
+    runInteropBenchmark(benchmark);
 }
 
-async function runJsBenchmark(benchmarkName) {
-    await runJsBenchmarkWithType(benchmarkName, BenchmarkTypeJs.NOT_INSTRUMENTED);
-    await runJsBenchmarkWithType(benchmarkName, BenchmarkTypeJs.INSTRUMENTED_FORWARD_ANALYSIS);
-    await runJsBenchmarkWithType(benchmarkName, BenchmarkTypeJs.INSTRUMENTED_LINVAIL);
-    await runJsBenchmarkWithType(benchmarkName, BenchmarkTypeJs.INSTRUMENTED_TAINT_ANALYSIS);
+async function runJsBenchmark(benchmark) {
+    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.NOT_INSTRUMENTED);
+    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_FORWARD_ANALYSIS);
+    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_LINVAIL);
+    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_TAINT_ANALYSIS);
 }
 
-async function runJsBenchmarkWithType(benchmarkName, benchmarkType) {
-    const resultsFile = `./${benchmarkName}/js/benchmark-results/results-${benchmarkType}.txt`;
+async function runJsBenchmarkWithType(benchmark, benchmarkType) {
+    const resultsFile = `./${benchmark.name}/js/benchmark-results/results-${benchmarkType}.txt`;
     resetFile(resultsFile);
-    const taintTracker = new TaintTracker(benchmarkTypeToAnalysisType(benchmarkType));
-    const file = await instrumentJsCode(benchmarkName, benchmarkType, taintTracker);
+    const taintTracker = new TaintTracker(benchmarkJsTypeToAnalysisType(benchmarkType));
+    const inputFile = `./${benchmark.name}/js/js.js`;
+    const outputFile = `./${benchmark.name}/js/instrumented/${benchmarkType}.js`;
+    const file = await instrumentJsCode(taintTracker, inputFile, outputFile);
     const absoluteFilePath = fs.realpathSync(file);
-    const args = [100];
+    const args = [benchmark.iterations];
     const func = async () => {
         await taintTracker.runInstrumentedAnalysis(absoluteFilePath, args);
     };
     await measureExecutionTime(func, args, resultsFile);
-    console.log("\n");
+    console.log("");
 }
 
-async function instrumentJsCode(benchmarkName, benchmarkType, taintTracker) {
-    const inputFile = `./${benchmarkName}/js/js.js`;
-    const outputFile = `./${benchmarkName}/js/instrumented/${benchmarkType}.js`;
-
+async function instrumentJsCode(taintTracker, inputFile, outputFile) {
     await taintTracker.analyze(inputFile, outputFile);
-
     return outputFile;
 }
 
-async function runWasmBenchmark(benchmarkName) {
-    await runWasmBenchmarkWithType(benchmarkName, BenchmarkTypeWasm.NOT_INSTRUMENTED);
-    await runWasmBenchmarkWithType(benchmarkName, BenchmarkTypeWasm.INSTRUMENTED_FORWARD_ANALYSIS);
-    await runWasmBenchmarkWithType(benchmarkName, BenchmarkTypeWasm.INSTRUMENTED_SHADOW_EXECUTION_ANALYSIS);
-    await runWasmBenchmarkWithType(benchmarkName, BenchmarkTypeWasm.INSTRUMENTED_TAINT_ANALYSIS);
+async function runWasmBenchmark(benchmark) {
+    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.NOT_INSTRUMENTED);
+    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_FORWARD_ANALYSIS);
+    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_SHADOW_EXECUTION_ANALYSIS);
+    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_TAINT_ANALYSIS);
 }
 
-async function runWasmBenchmarkWithType(benchmarkName, benchmarkType) {
-    const resultsFile = `./${benchmarkName}/rs/benchmark-results/results-${benchmarkType}.txt`;
+async function runWasmBenchmarkWithType(benchmark, benchmarkType) {
+    const resultsFile = `./${benchmark.name}/rs/benchmark-results/results-${benchmarkType}.txt`;
     resetFile(resultsFile);
 
-    const wasmFilePath = `./${benchmarkName}/rs/instrumented/${benchmarkType}.wasm`;
+    const wasmFilePath = `./${benchmark.name}/rs/instrumented/${benchmarkType}.wasm`;
     const absoluteFilePath = fs.realpathSync(wasmFilePath);
-    const wasmBuffer = fs.readFileSync(wasmFilePath);
+    const wasmBuffer = fs.readFileSync(absoluteFilePath);
     const requiresTaintImports = benchmarkType !== BenchmarkTypeWasm.NOT_INSTRUMENTED;
     const importObject = {};
     if (requiresTaintImports) {
@@ -153,12 +175,40 @@ async function runWasmBenchmarkWithType(benchmarkName, benchmarkType) {
         return;
     }
 
-    const args = [1000];
+    const args = [benchmark.iterations];
     const func = async () => {
         await main(...args);
     };
     await measureExecutionTime(func, args, resultsFile);
-    console.log("\n");
+    console.log("");
+}
+
+async function runInteropBenchmark(benchmark) {
+    await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.NOT_INSTRUMENTED);
+    await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_FORWARD_ANALYSIS);
+    // await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_JS);
+    // await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_WASM);
+    await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_BOTH);
+}
+
+async function runInteropBenchmarkWithType(benchmark, benchmarkType) {
+    const resultsFile = `./${benchmark.name}/js-rs/benchmark-results/results-${benchmarkType}.txt`;
+    resetFile(resultsFile);
+
+    const jsFile = `./${benchmark.name}/js-rs/js/js.js`;
+    const instrumentedJsFile = `./${benchmark.name}/js-rs/js/instrumented/${benchmarkType}.js`;
+    const instrumentedWasmFile = `./${benchmark.name}/js-rs/rs/instrumented/${benchmarkType}.wasm`;
+    const absoluteInstrumentedWasmFile = fs.realpathSync(instrumentedWasmFile);
+    const taintTracker = new TaintTracker(benchmarkInteropTypeToAnalysisType(benchmarkType));
+    await instrumentJsCode(taintTracker, jsFile, instrumentedJsFile);
+    const absoluteInstrumentedJsFile = fs.realpathSync(instrumentedJsFile);
+    const args = [absoluteInstrumentedWasmFile, benchmark.iterations];
+    setup();
+    const func = async () => {
+        await taintTracker.runInstrumentedAnalysis(absoluteInstrumentedJsFile, args);
+    };
+    await measureExecutionTime(func, args, resultsFile);
+    console.log("");
 }
 
 async function measureExecutionTime(func, args, outputFile) {
@@ -194,4 +244,8 @@ async function resetFile(file) {
     });
 }
 
-runBenchmark(benchmarks[0]);
+benchmarks.forEach(async (benchmark) => {
+    const { name, iterations } = benchmark;
+    console.log(`Running benchmark: ${name} (${iterations} iterations)`);
+    await runBenchmark(benchmark);
+});

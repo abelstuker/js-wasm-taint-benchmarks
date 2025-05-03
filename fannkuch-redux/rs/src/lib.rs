@@ -31,7 +31,11 @@ unsafe extern "C" {
 // Converted from JavaScript version
 
 fn max(a: i32, b: i32) -> i32 {
-    if a > b { a } else { b }
+    if a > b {
+        a
+    } else {
+        b
+    }
 }
 
 fn fannkuch_redux(n: usize) -> i32 {
@@ -41,9 +45,6 @@ fn fannkuch_redux(n: usize) -> i32 {
     let mut max_flips_count = 0;
     let mut perm_count = 0;
     let mut checksum = 0;
-
-    // Note: The original JS code had Taint.source() calls here which are removed
-    // since they're part of a testing/security framework not needed in the Rust version
 
     let mut r = n;
 
@@ -88,9 +89,8 @@ fn fannkuch_redux(n: usize) -> i32 {
 
         if (max_flips_count == flips_count) {
             unsafe { assert_is_tainted_i32(checksum) };
-        } // Original code had Taint assertions here which are removed
+        }
 
-        // Use incremental change to generate another permutation
         loop {
             if r == n {
                 for idx in (0..n).step_by(3) {

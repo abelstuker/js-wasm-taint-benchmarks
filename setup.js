@@ -17,6 +17,6 @@ export const benchmarks = [
     {
         name: "fannkuch-redux",
         iterations: 2,
-        input: 10,
+        input: 5,
     },
 ];

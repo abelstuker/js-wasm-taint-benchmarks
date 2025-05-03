@@ -9,9 +9,14 @@ export const benchmarks = [
     //     iterations: 2,
     //     input: 6,
     // },
+    // {
+    //     name: "mandelbrot",
+    //     iterations: 2,
+    //     input: 4,
+    // },
     {
-        name: "mandelbrot",
+        name: "fannkuch-redux",
         iterations: 2,
-        input: 4,
+        input: 10,
     },
 ];

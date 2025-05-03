@@ -65,6 +65,5 @@ The following benchmark problems from The Computer Language Benchmarks Game have
 First, configure the benchmarks you want to run, and their parameters, in `setup.js`.
 
 ```bash
-# For JavaScript benchmarks
 node benchmarks.js
 ```

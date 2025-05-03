@@ -112,9 +112,9 @@ const benchmarkInteropTypeToAnalysisType = (benchmarkTypeInterop) => {
 };
 
 export default async function runBenchmark(benchmark) {
-    await runWasmBenchmark(benchmark);
+    // await runWasmBenchmark(benchmark);
     await runJsBenchmark(benchmark);
-    await runInteropBenchmark(benchmark);
+    // await runInteropBenchmark(benchmark);
 }
 
 async function runJsBenchmark(benchmark) {

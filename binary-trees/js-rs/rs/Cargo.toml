@@ -1,0 +1,12 @@
+[package]
+name = "binary-trees-js-rs"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rayon = "1.10.0"
+typed-arena = "2.0.2"
+wasm-bindgen = "0.2"

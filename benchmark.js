@@ -178,7 +178,9 @@ async function runWasmBenchmarkWithType(benchmark, benchmarkType) {
 
     const args = [benchmark.input];
     const func = async () => {
-        await main(...args);
+        console.log(`Running ${benchmarkType} benchmark...`);
+        const res = await main(...args);
+        console.log(`Result: ${res}`);
     };
     await measureExecutionTime(func, args, resultsFile);
     console.log("");

@@ -4,4 +4,9 @@ export const benchmarks = [
         iterations: 2,
         input: 100,
     },
+    {
+        name: "binary-trees",
+        iterations: 2,
+        input: 6,
+    },
 ];

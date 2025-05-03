@@ -1,5 +1,4 @@
 import fs from "fs";
-// const { fillTaintFunctions, taintMethods, throwNotImplementedError } = globalThis.taintSetup;
 
 const Taint = globalThis.Taint;
 

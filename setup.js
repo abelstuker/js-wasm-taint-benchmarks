@@ -14,9 +14,19 @@ export const benchmarks = [
     //     iterations: 2,
     //     input: 4,
     // },
+    // {
+    //     name: "fannkuch-redux",
+    //     iterations: 2,
+    //     input: 5,
+    // },
+    // {
+    //     name: "n-body",
+    //     iterations: 2,
+    //     input: 2000,
+    // },
     {
-        name: "fannkuch-redux",
+        name: "fasta",
         iterations: 2,
-        input: 5,
+        input: 10000,
     },
 ];

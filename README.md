@@ -50,10 +50,10 @@ The following benchmark problems from The Computer Language Benchmarks Game have
 
 -   [ ] N-body
 -   [x] Binary Trees
--   [ ] Fannkuch Redux
+-   [x] Fannkuch Redux
 -   [x] Spectral Norm
--   [ ] Mandelbrot
--   [ ] Fasta
+-   [x] Mandelbrot
+-   [x] Fasta
 -   [ ] Reverse Complement
 -   [ ] K-Nucleotide
 -   [ ] Regex Redux
@@ -67,3 +67,7 @@ First, configure the benchmarks you want to run, and their parameters, in `setup
 ```bash
 node benchmarks.js
 ```
+
+### Acknowledgments
+
+Credits to Jacob Kreindl for the JavaScript programs used in this benchmark suite.

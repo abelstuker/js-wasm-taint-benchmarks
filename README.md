@@ -48,12 +48,13 @@ benchmark-suite/
 
 The following benchmark problems from The Computer Language Benchmarks Game have been adapted:
 
--   [ ] N-body
+-   [x] N-body
 -   [x] Binary Trees
 -   [x] Fannkuch Redux
 -   [x] Spectral Norm
 -   [x] Mandelbrot
 -   [x] Fasta
+-   [ ] Pi Digits
 -   [ ] Reverse Complement
 -   [ ] K-Nucleotide
 -   [ ] Regex Redux

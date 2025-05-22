@@ -112,9 +112,9 @@ const benchmarkInteropTypeToAnalysisType = (benchmarkTypeInterop) => {
 };
 
 export default async function runBenchmark(benchmark) {
-    await runWasmBenchmark(benchmark);
     await runJsBenchmark(benchmark);
-    await runInteropBenchmark(benchmark);
+    // await runWasmBenchmark(benchmark);
+    // await runInteropBenchmark(benchmark);
 }
 
 async function runJsBenchmark(benchmark) {
@@ -246,8 +246,8 @@ async function resetFile(file) {
     });
 }
 
-benchmarks.forEach(async (benchmark) => {
+for (const benchmark of benchmarks) {
     const { name, input } = benchmark;
     console.log(`Running benchmark: ${name} (${input} input)`);
     await runBenchmark(benchmark);
-});
+}

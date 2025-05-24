@@ -54,9 +54,14 @@
  */
 import fs from "fs";
 import { TaintTracker } from "../aran-taint-analysis/index.js";
-import { fillTaintFunctions, taintMethods } from "../aran-taint-analysis/src/taint.js";
+import {
+    debugMethods,
+    fillDebugFunctions,
+    fillTaintFunctions,
+    taintMethods,
+} from "../aran-taint-analysis/src/taint.js";
 import { ANALYSIS_TYPES } from "../aran-taint-analysis/utils/config.js";
-import { benchmarks } from "./setup.js";
+import { benchmarks, benchmarkTypes } from "./setup.js";
 
 const BenchmarkTypeJs = {
     NOT_INSTRUMENTED: "not-instrumented",
@@ -112,16 +117,20 @@ const benchmarkInteropTypeToAnalysisType = (benchmarkTypeInterop) => {
 };
 
 export default async function runBenchmark(benchmark) {
-    await runJsBenchmark(benchmark);
-    // await runWasmBenchmark(benchmark);
-    // await runInteropBenchmark(benchmark);
+    if (benchmarkTypes.javascript.enabled) await runJsBenchmark(benchmark);
+    if (benchmarkTypes.webassembly.enabled) await runWasmBenchmark(benchmark);
+    if (benchmarkTypes.javascript_webassembly.enabled) await runInteropBenchmark(benchmark);
 }
 
 async function runJsBenchmark(benchmark) {
-    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.NOT_INSTRUMENTED);
-    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_FORWARD_ANALYSIS);
-    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_LINVAIL);
-    await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_TAINT_ANALYSIS);
+    if (benchmarkTypes.javascript.baseline_enabled)
+        await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.NOT_INSTRUMENTED);
+    if (benchmarkTypes.javascript.forward_enabled)
+        await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_FORWARD_ANALYSIS);
+    if (benchmarkTypes.javascript.linvail_enabled)
+        await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_LINVAIL);
+    if (benchmarkTypes.javascript.taint_enabled)
+        await runJsBenchmarkWithType(benchmark, BenchmarkTypeJs.INSTRUMENTED_TAINT_ANALYSIS);
 }
 
 async function runJsBenchmarkWithType(benchmark, benchmarkType) {
@@ -146,10 +155,14 @@ async function instrumentJsCode(taintTracker, inputFile, outputFile) {
 }
 
 async function runWasmBenchmark(benchmark) {
-    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.NOT_INSTRUMENTED);
-    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_FORWARD_ANALYSIS);
-    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_SHADOW_EXECUTION_ANALYSIS);
-    await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_TAINT_ANALYSIS);
+    if (benchmarkTypes.webassembly.baseline_enabled)
+        await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.NOT_INSTRUMENTED);
+    if (benchmarkTypes.webassembly.forward_enabled)
+        await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_FORWARD_ANALYSIS);
+    if (benchmarkTypes.webassembly.shadow_enabled)
+        await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_SHADOW_EXECUTION_ANALYSIS);
+    if (benchmarkTypes.webassembly.taint_enabled)
+        await runWasmBenchmarkWithType(benchmark, BenchmarkTypeWasm.INSTRUMENTED_TAINT_ANALYSIS);
 }
 
 async function runWasmBenchmarkWithType(benchmark, benchmarkType) {
@@ -164,18 +177,19 @@ async function runWasmBenchmarkWithType(benchmark, benchmarkType) {
     if (requiresTaintImports) {
         importObject.taint = taintMethods;
     }
+    importObject.debug = debugMethods;
     const wasmModule = await WebAssembly.instantiate(wasmBuffer, importObject);
 
     if (requiresTaintImports) {
         fillTaintFunctions(wasmModule.instance.exports);
     }
+    fillDebugFunctions();
 
     const main = wasmModule.instance.exports.main;
     if (typeof main !== "function") {
         console.error(`Error: Wasm module ${wasmFilePath} does not export a 'main' function.`);
         return;
     }
-
     const args = [benchmark.input];
     const func = async () => {
         console.log(`Running ${benchmarkType} benchmark...`);
@@ -187,11 +201,14 @@ async function runWasmBenchmarkWithType(benchmark, benchmarkType) {
 }
 
 async function runInteropBenchmark(benchmark) {
-    await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.NOT_INSTRUMENTED);
-    await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_FORWARD_ANALYSIS);
+    if (benchmarkTypes.javascript_webassembly.baseline_enabled)
+        await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.NOT_INSTRUMENTED);
+    if (benchmarkTypes.javascript_webassembly.forward_enabled)
+        await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_FORWARD_ANALYSIS);
     // await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_JS);
     // await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_WASM);
-    await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_BOTH);
+    if (benchmarkTypes.javascript_webassembly.taint_enabled)
+        await runInteropBenchmarkWithType(benchmark, BenchmarkTypeInterop.INSTRUMENTED_TAINT_ANALYSIS_BOTH);
 }
 
 async function runInteropBenchmarkWithType(benchmark, benchmarkType) {

@@ -7,12 +7,12 @@ export const benchmarks = [
     // {
     //     name: "binary-trees",
     //     iterations: 2,
-    //     input: 6,
+    //     input: 21,
     // },
     // {
     //     name: "mandelbrot",
-    //     iterations: 2,
-    //     input: 4,
+    //     iterations: 1,
+    //     input: 100,
     // },
     // {
     //     name: "fannkuch-redux",
@@ -22,11 +22,43 @@ export const benchmarks = [
     // {
     //     name: "n-body",
     //     iterations: 2,
-    //     input: 2000,
+    //     input: 500, // 2000,
+    // },
+    // {
+    //     name: "fasta",
+    //     iterations: 2,
+    //     input: 500, //10000,
+    // },
+    // {
+    //     name: "pi-digits",
+    //     iterations: 2,
+    //     input: 1000,
     // },
     {
-        name: "fasta",
+        name: "reverse-complement",
         iterations: 2,
-        input: 10000,
+        input: 0,
     },
 ];
+
+export const benchmarkTypes = {
+    javascript: {
+        enabled: false,
+        baseline_enabled: true,
+        forward_enabled: true,
+        linvail_enabled: true,
+        taint_enabled: true,
+    },
+    webassembly: {
+        enabled: true,
+        baseline_enabled: true,
+        forward_enabled: true,
+        shadow_enabled: true,
+        taint_enabled: true,
+    },
+    javascript_webassembly: {
+        enabled: true,
+        forward_enabled: true,
+        taint_enabled: true,
+    },
+};

@@ -66,7 +66,7 @@ fn write_fasta(s: &[char], from: usize) {
             return;
         }
 
-        unsafe { assert_is_tainted_char(ch) };
+        unsafe { assert_is_not_tainted_char(ch) };
         stdout.write_all(&[ch as u8]).unwrap();
     }
     stdout.write_all(b"\n").unwrap();

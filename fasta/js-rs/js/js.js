@@ -11,40 +11,13 @@ const JSImport = {
     },
 };
 
-/**
- * selectRandom(
-                    rng,
-                    gene_list,
-                    gene_list.len(),
-                    mem::size_of::<AminoAcid>(),
-                    offset_of!(AminoAcid, c),
-                    offset_of!(AminoAcid, p),
-                )
-
-    This was the original function in Rust:
-    fn select_random(rng: &mut Random, gene_list: &[AminoAcid]) -> char {
-    let r = rng.gen_random(1.0);
-
-    if r < gene_list[0].p {
-        return gene_list[0].c;
-    }
-
-    let mut lo = 0;
-    let mut hi = gene_list.len() - 1;
-
-    while hi > lo + 1 {
-        let i = (hi + lo) / 2;
-        if r < gene_list[i].p {
-            hi = i;
-        } else {
-            lo = i;
-        }
-    }
-
-    gene_list[hi].c
-}
- */
-function selectRandom(memory, rngPtr, geneListPtr, count, sizeOfAminoAcid, offsetOfC, offsetOfP) {
+function selectRandom(rngPtr, geneListPtr, count, sizeOfAminoAcid, offsetOfC, offsetOfP, memory) {
+    Taint.assertIsNotTainted(rngPtr);
+    Taint.assertIsNotTainted(geneListPtr);
+    Taint.assertIsNotTainted(count);
+    Taint.assertIsNotTainted(sizeOfAminoAcid);
+    Taint.assertIsNotTainted(offsetOfC);
+    Taint.assertIsNotTainted(offsetOfP);
     const rng = new Uint32Array(memory.buffer, rngPtr, 1);
     var last = rng[0];
     const IM = 139968;
@@ -57,7 +30,15 @@ function selectRandom(memory, rngPtr, geneListPtr, count, sizeOfAminoAcid, offse
 
     const geneList = new Uint8Array(memory.buffer, geneListPtr, count * sizeOfAminoAcid);
 
-    if (r < geneList[offsetOfP / 8]) return String.fromCharCode(geneList[0 + offsetOfC / 8]);
+    if (r < geneList[offsetOfP / 8]) {
+        const res = String.fromCharCode(geneList[0 + offsetOfC / 8]);
+        if (res === "G" || res === "T" || res === "g" || res === "t") {
+            Taint.assertIsTainted(res);
+        } else {
+            Taint.assertIsNotTainted(res);
+        }
+        return res;
+    }
 
     let lo = 0;
     let hi = count - 1;
@@ -71,10 +52,16 @@ function selectRandom(memory, rngPtr, geneListPtr, count, sizeOfAminoAcid, offse
         }
     }
 
-    return geneList[hi * sizeOfAminoAcid + offsetOfC / 8];
+    const resCode = geneList[hi * sizeOfAminoAcid + offsetOfC / 8];
+    return resCode;
 }
 
-export default async function main(insturmentedWasmPath, iterations) {
+export default async function main(
+    insturmentedWasmPath,
+    iterations,
+    additionalImportObject,
+    additionalImportObjectFillerFunction
+) {
     const wasmBuffer = fs.readFileSync(insturmentedWasmPath);
 
     const jsMethods = Object.keys(JSImport).reduce((methods, key) => {
@@ -84,13 +71,18 @@ export default async function main(insturmentedWasmPath, iterations) {
 
     const module = await WebAssembly.instantiate(wasmBuffer, {
         js: jsMethods,
+        ...additionalImportObject,
     });
 
     const memory = module.instance.exports.memory;
-    JSImport.selectRandom = (...args) => selectRandom(memory, ...args);
+    JSImport.selectRandom = (...args) => selectRandom(...args, memory);
     JSImport.js_log = (val) => {
         console.log("js_log:", val);
     };
+
+    if (additionalImportObjectFillerFunction) {
+        additionalImportObjectFillerFunction(module.instance.exports);
+    }
     const wasmMain = module.instance.exports.main;
     const res = wasmMain(iterations);
     return res;

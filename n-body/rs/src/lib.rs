@@ -1,6 +1,9 @@
 // The Computer Language Benchmarks Game
 // https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 //
+// Rust implementation of N-body simulation
+// Adapted from the JavaScript version
+
 use std::sync::atomic::{AtomicBool, Ordering};
 
 #[link(wasm_import_module = "taint")]
@@ -27,12 +30,6 @@ unsafe extern "C" {
     fn check_is_tainted_f64(val: f64) -> bool;
     fn js_log(value: f64);
 }
-
-// The Computer Language Benchmarks Game
-// https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
-//
-// Rust implementation of N-body simulation
-// Adapted from the JavaScript version
 
 const BENCHMARK_NAME: &str = "n-body";
 const BODIES_COUNT: usize = 5;
@@ -137,6 +134,16 @@ impl NBodySystem {
         self.bodies[SUN].vx = -px / self.solar_mass;
         self.bodies[SUN].vy = -py / self.solar_mass;
         self.bodies[SUN].vz = -pz / self.solar_mass;
+
+        unsafe {
+            assert_is_not_tainted_f64(self.bodies[SUN].vx);
+        }
+        unsafe {
+            assert_is_not_tainted_f64(self.bodies[SUN].vy);
+        }
+        unsafe {
+            assert_is_not_tainted_f64(self.bodies[SUN].vz);
+        }
     }
 
     fn advance(&mut self, dt: f64) {
@@ -144,8 +151,13 @@ impl NBodySystem {
             let x1 = self.bodies[i].x;
             let y1 = self.bodies[i].y;
             let z1 = self.bodies[i].z;
-
+            unsafe { assert_is_tainted_f64(x1) };
+            unsafe { assert_is_tainted_f64(y1) };
+            unsafe { assert_is_tainted_f64(z1) };
             for j in (i + 1)..BODIES_COUNT {
+                unsafe { assert_is_tainted_f64(self.bodies[j].x) };
+                unsafe { assert_is_tainted_f64(self.bodies[j].y) };
+                unsafe { assert_is_tainted_f64(self.bodies[j].z) };
                 let dx = x1 - self.bodies[j].x;
                 let dy = y1 - self.bodies[j].y;
                 let dz = z1 - self.bodies[j].z;
@@ -166,6 +178,16 @@ impl NBodySystem {
                 self.bodies[j].vx += dx * mass_i * mag;
                 self.bodies[j].vy += dy * mass_i * mag;
                 self.bodies[j].vz += dz * mass_i * mag;
+
+                unsafe { assert_is_tainted_f64(self.bodies[i].vx) };
+                unsafe { assert_is_tainted_f64(self.bodies[i].vy) };
+                unsafe { assert_is_tainted_f64(self.bodies[i].vz) };
+                unsafe { assert_is_tainted_f64(self.bodies[j].vx) };
+                unsafe { assert_is_tainted_f64(self.bodies[j].vy) };
+                unsafe { assert_is_tainted_f64(self.bodies[j].vz) };
+
+                unsafe { assert_is_not_tainted_f64(self.bodies[i].mass) };
+                unsafe { assert_is_not_tainted_f64(self.bodies[j].mass) };
             }
         }
 

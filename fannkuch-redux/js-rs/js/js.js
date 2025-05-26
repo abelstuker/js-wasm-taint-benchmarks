@@ -16,7 +16,12 @@ function max(a, b) {
     }
 }
 
-export default async function main(insturmentedWasmPath, iterations) {
+export default async function main(
+    insturmentedWasmPath,
+    iterations,
+    additionalImportObject,
+    additionalImportObjectFillerFunction
+) {
     const wasmBuffer = fs.readFileSync(insturmentedWasmPath);
 
     const jsMethods = Object.keys(JSImport).reduce((methods, key) => {
@@ -26,10 +31,15 @@ export default async function main(insturmentedWasmPath, iterations) {
 
     const module = await WebAssembly.instantiate(wasmBuffer, {
         js: jsMethods,
+        ...additionalImportObject,
     });
 
     const memory = module.instance.exports.memory;
     JSImport.max = (a, b) => max(a, b);
+
+    if (additionalImportObjectFillerFunction) {
+        additionalImportObjectFillerFunction(module.instance.exports);
+    }
 
     const wasmMain = module.instance.exports.main;
     const res = wasmMain(iterations);

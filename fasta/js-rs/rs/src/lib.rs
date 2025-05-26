@@ -5,35 +5,35 @@ use std::io::{self, Write};
 use std::mem::{self, offset_of};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-// #[link(wasm_import_module = "taint")]
-// unsafe extern "C" {
-//     fn taint_char(val: char) -> char;
-//     fn taint_i32(val: i32) -> i32;
-//     fn taint_i64(val: i64) -> i64;
-//     fn taint_f32(val: f32) -> f32;
-//     fn taint_f64(val: f64) -> f64;
-//     fn sanitize_char(val: char) -> char;
-//     fn sanitize_i32(val: i32) -> i32;
-//     fn sanitize_i64(val: i64) -> i64;
-//     fn sanitize_f32(val: f32) -> f32;
-//     fn sanitize_f64(val: f64) -> f64;
-//     fn assert_is_tainted_char(val: char) -> char;
-//     fn assert_is_tainted_i32(val: i32);
-//     fn assert_is_tainted_i64(val: i64);
-//     fn assert_is_tainted_f32(val: f32);
-//     fn assert_is_tainted_f64(val: f64);
-//     fn assert_is_not_tainted_char(val: char) -> char;
-//     fn assert_is_not_tainted_i32(val: i32);
-//     fn assert_is_not_tainted_i64(val: i64);
-//     fn assert_is_not_tainted_f32(val: f32);
-//     fn assert_is_not_tainted_f64(val: f64);
-//     fn check_is_tainted_char(val: char) -> bool;
-//     fn check_is_tainted_i32(val: i32) -> bool;
-//     fn check_is_tainted_i64(val: i64) -> bool;
-//     fn check_is_tainted_f32(val: f32) -> bool;
-//     fn check_is_tainted_f64(val: f64) -> bool;
-//     fn js_log(value: f64);
-// }
+#[link(wasm_import_module = "taint")]
+unsafe extern "C" {
+    fn taint_char(val: char) -> char;
+    fn taint_i32(val: i32) -> i32;
+    fn taint_i64(val: i64) -> i64;
+    fn taint_f32(val: f32) -> f32;
+    fn taint_f64(val: f64) -> f64;
+    fn sanitize_char(val: char) -> char;
+    fn sanitize_i32(val: i32) -> i32;
+    fn sanitize_i64(val: i64) -> i64;
+    fn sanitize_f32(val: f32) -> f32;
+    fn sanitize_f64(val: f64) -> f64;
+    fn assert_is_tainted_char(val: char) -> char;
+    fn assert_is_tainted_i32(val: i32);
+    fn assert_is_tainted_i64(val: i64);
+    fn assert_is_tainted_f32(val: f32);
+    fn assert_is_tainted_f64(val: f64);
+    fn assert_is_not_tainted_char(val: char) -> char;
+    fn assert_is_not_tainted_i32(val: i32);
+    fn assert_is_not_tainted_i64(val: i64);
+    fn assert_is_not_tainted_f32(val: f32);
+    fn assert_is_not_tainted_f64(val: f64);
+    fn check_is_tainted_char(val: char) -> bool;
+    fn check_is_tainted_i32(val: i32) -> bool;
+    fn check_is_tainted_i64(val: i64) -> bool;
+    fn check_is_tainted_f32(val: f32) -> bool;
+    fn check_is_tainted_f64(val: f64) -> bool;
+    fn js_log(value: f64);
+}
 
 struct AminoAcid {
     c: char,
@@ -51,11 +51,13 @@ fn write_fasta(s: &[char], from: usize) {
         let ch = s[i];
 
         if ch == 'G' || ch == 'T' {
+            unsafe { assert_is_tainted_char(ch) };
             stdout.write_all(&[ch as u8]).unwrap();
             continue;
         }
 
         if ch == 'g' || ch == 't' {
+            unsafe { assert_is_tainted_char(ch) };
             stdout.write_all(&[ch as u8]).unwrap();
             continue;
         }
@@ -65,6 +67,7 @@ fn write_fasta(s: &[char], from: usize) {
             return;
         }
 
+        unsafe { assert_is_not_tainted_char(ch) };
         stdout.write_all(&[ch as u8]).unwrap();
     }
     stdout.write_all(b"\n").unwrap();
@@ -174,11 +177,11 @@ fn setup_base_data() -> (Vec<AminoAcid>, Vec<AminoAcid>, Vec<char>) {
             p: 0.1979883004921,
         },
         AminoAcid {
-            c: 'g',
+            c: unsafe { taint_char('g') },
             p: 0.1975473066391,
         },
         AminoAcid {
-            c: 't',
+            c: unsafe { taint_char('t') },
             p: 0.3015094502008,
         },
     ];
@@ -186,8 +189,14 @@ fn setup_base_data() -> (Vec<AminoAcid>, Vec<AminoAcid>, Vec<char>) {
     let mut iub = vec![
         AminoAcid { c: 'a', p: 0.27 },
         AminoAcid { c: 'c', p: 0.12 },
-        AminoAcid { c: 'g', p: 0.12 },
-        AminoAcid { c: 't', p: 0.27 },
+        AminoAcid {
+            c: unsafe { taint_char('g') },
+            p: 0.12,
+        },
+        AminoAcid {
+            c: unsafe { taint_char('t') },
+            p: 0.27,
+        },
         AminoAcid { c: 'B', p: 0.02 },
         AminoAcid { c: 'D', p: 0.02 },
         AminoAcid { c: 'H', p: 0.02 },
@@ -212,9 +221,9 @@ fn setup_base_data() -> (Vec<AminoAcid>, Vec<AminoAcid>, Vec<char>) {
     let mut alu = Vec::with_capacity(alu_init.len());
     for ch in alu_init.chars() {
         if ch == 'G' {
-            alu.push('G');
+            alu.push(unsafe { taint_char('G') });
         } else if ch == 'T' {
-            alu.push('T');
+            alu.push(unsafe { taint_char('T') });
         } else {
             alu.push(ch);
         }
@@ -246,6 +255,5 @@ fn benchmark(n: usize) -> i32 {
 #[unsafe(no_mangle)]
 fn main(n: i32) -> i32 {
     let result = benchmark(n as usize);
-    // assert_eq!(result, 0);
     result
 }

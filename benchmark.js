@@ -222,7 +222,15 @@ async function runInteropBenchmarkWithType(benchmark, benchmarkType) {
     const taintTracker = new TaintTracker(benchmarkInteropTypeToAnalysisType(benchmarkType));
     await instrumentJsCode(taintTracker, jsFile, instrumentedJsFile);
     const absoluteInstrumentedJsFile = fs.realpathSync(instrumentedJsFile);
-    const args = [absoluteInstrumentedWasmFile, benchmark.input];
+    const requiresTaintImports = benchmarkType !== BenchmarkTypeInterop.NOT_INSTRUMENTED;
+    const additionalImportObject = requiresTaintImports ? { taint: taintMethods } : {};
+    const additionalImportObjectFillerFunction = requiresTaintImports ? fillTaintFunctions : undefined;
+    const args = [
+        absoluteInstrumentedWasmFile,
+        benchmark.input,
+        additionalImportObject,
+        additionalImportObjectFillerFunction,
+    ];
     const func = async () => {
         await taintTracker.runInstrumentedAnalysis(absoluteInstrumentedJsFile, args);
     };
@@ -232,7 +240,12 @@ async function runInteropBenchmarkWithType(benchmark, benchmarkType) {
 
 async function measureExecutionTime(func, args, outputFile) {
     const start = performance.now();
-    await func(...args);
+    try {
+        await func(...args);
+    } catch (error) {
+        console.error("❌ Error during execution:", error);
+        return;
+    }
     const end = performance.now();
     const executionTime = end - start;
     console.log(`⌛️ Execution time: ${executionTime} ms`);
@@ -265,6 +278,6 @@ async function resetFile(file) {
 
 for (const benchmark of benchmarks) {
     const { name, input } = benchmark;
-    console.log(`Running benchmark: ${name} (${input} input)`);
+    console.log(`Running benchmark: \x1b[43m${name}\x1b[0m \x1b[33m(${input} input)\x1b[0m`);
     await runBenchmark(benchmark);
 }

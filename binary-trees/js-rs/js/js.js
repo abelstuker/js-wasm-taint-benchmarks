@@ -20,7 +20,12 @@ function getItem(level) {
     return item;
 }
 
-export default async function main(insturmentedWasmPath, iterations) {
+export default async function main(
+    insturmentedWasmPath,
+    iterations,
+    additionalImportObject,
+    additionalImportObjectFillerFunction
+) {
     const wasmBuffer = fs.readFileSync(insturmentedWasmPath);
 
     const jsMethods = Object.keys(JSImport).reduce((methods, key) => {
@@ -30,10 +35,14 @@ export default async function main(insturmentedWasmPath, iterations) {
 
     const module = await WebAssembly.instantiate(wasmBuffer, {
         js: jsMethods,
+        ...additionalImportObject,
     });
 
     JSImport.getItem = (level) => getItem(level);
     const wasmMain = module.instance.exports.main;
+    if (additionalImportObjectFillerFunction) {
+        additionalImportObjectFillerFunction(module.instance.exports);
+    }
     const res = wasmMain(iterations);
     return res;
 }

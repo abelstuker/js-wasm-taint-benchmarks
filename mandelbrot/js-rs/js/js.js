@@ -8,39 +8,15 @@ const JSImport = {
     },
 };
 
-/**
- * unsafe extern "C" {
-    fn do_loop(
-        ziPtr: *mut f64,
-        zrPtr: *mut f64,
-        tiPtr: *mut f64,
-        trPtr: *mut f64,
-        ci: f64,
-        cr: f64,
-    );
-
-    Ran with:
-    do_loop(
-        &mut body_data.zi,
-        &mut body_data.zr,
-        &mut body_data.ti,
-        &mut body_data.tr,
-        body_data.ci,
-        body_data.cr,
-    );
-    Perform this (without bodyData things):
-    bodyData.Zi = 2.0 * bodyData.Zr * bodyData.Zi + bodyData.Ci;
-    bodyData.Zr = bodyData.Tr - bodyData.Ti + bodyData.Cr;
-    bodyData.Tr = bodyData.Zr * bodyData.Zr;
-    bodyData.Ti = bodyData.Zi * bodyData.Zi;
-}
- */
 function do_loop(memory, ziPtr, zrPtr, tiPtr, trPtr, ci, cr) {
+    Taint.assertIsNotTainted(ci);
+    Taint.assertIsNotTainted(cr);
     const ziArr = new Float64Array(memory.buffer, ziPtr, 1);
     const zrArr = new Float64Array(memory.buffer, zrPtr, 1);
     const tiArr = new Float64Array(memory.buffer, tiPtr, 1);
     const trArr = new Float64Array(memory.buffer, trPtr, 1);
     const zi = ziArr[0];
+    Taint.assertIsTainted(zi);
     const zr = zrArr[0];
     const ti = tiArr[0];
     const tr = trArr[0];
@@ -56,7 +32,12 @@ function do_loop(memory, ziPtr, zrPtr, tiPtr, trPtr, ci, cr) {
     trArr[0] = newTr;
 }
 
-export default async function main(insturmentedWasmPath, iterations) {
+export default async function main(
+    insturmentedWasmPath,
+    iterations,
+    additionalImportObject,
+    additionalImportObjectFillerFunction
+) {
     const wasmBuffer = fs.readFileSync(insturmentedWasmPath);
 
     const jsMethods = Object.keys(JSImport).reduce((methods, key) => {
@@ -66,11 +47,15 @@ export default async function main(insturmentedWasmPath, iterations) {
 
     const module = await WebAssembly.instantiate(wasmBuffer, {
         js: jsMethods,
+        ...additionalImportObject,
     });
 
     const memory = module.instance.exports.memory;
     JSImport.do_loop = (ziPtr, zrPtr, tiPtr, trPtr, ci, cr) => do_loop(memory, ziPtr, zrPtr, tiPtr, trPtr, ci, cr);
 
+    if (additionalImportObjectFillerFunction) {
+        additionalImportObjectFillerFunction(module.instance.exports);
+    }
     const wasmMain = module.instance.exports.main;
     const res = wasmMain(iterations);
     return res;

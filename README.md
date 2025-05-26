@@ -54,8 +54,8 @@ The following benchmark problems from The Computer Language Benchmarks Game have
 -   [x] Spectral Norm
 -   [x] Mandelbrot
 -   [x] Fasta
--   [ ] Pi Digits
--   [ ] Reverse Complement
+-   [x] Pi Digits
+-   [x] Reverse Complement
 -   [ ] K-Nucleotide
 -   [ ] Regex Redux
 

@@ -8,35 +8,31 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-// #[link(wasm_import_module = "taint")]
-// unsafe extern "C" {
-//     fn taint_i32(val: i32) -> i32;
-//     fn taint_i64(val: i64) -> i64;
-//     fn taint_f32(val: f32) -> f32;
-//     fn taint_f64(val: f64) -> f64;
-//     fn sanitize_i32(val: i32) -> i32;
-//     fn sanitize_i64(val: i64) -> i64;
-//     fn sanitize_f32(val: f32) -> f32;
-//     fn sanitize_f64(val: f64) -> f64;
-//     fn assert_is_tainted_i32(val: i32);
-//     fn assert_is_tainted_i64(val: i64);
-//     fn assert_is_tainted_f32(val: f32);
-//     fn assert_is_tainted_f64(val: f64);
-//     fn assert_is_not_tainted_i32(val: i32);
-//     fn assert_is_not_tainted_i64(val: i64);
-//     fn assert_is_not_tainted_f32(val: f32);
-//     fn assert_is_not_tainted_f64(val: f64);
-//     fn js_log(value: f64);
-// }
+#[link(wasm_import_module = "taint")]
+unsafe extern "C" {
+    fn taint_i32(val: i32) -> i32;
+    fn taint_i64(val: i64) -> i64;
+    fn taint_f32(val: f32) -> f32;
+    fn taint_f64(val: f64) -> f64;
+    fn sanitize_i32(val: i32) -> i32;
+    fn sanitize_i64(val: i64) -> i64;
+    fn sanitize_f32(val: f32) -> f32;
+    fn sanitize_f64(val: f64) -> f64;
+    fn assert_is_tainted_i32(val: i32);
+    fn assert_is_tainted_i64(val: i64);
+    fn assert_is_tainted_f32(val: f32);
+    fn assert_is_tainted_f64(val: f64);
+    fn assert_is_not_tainted_i32(val: i32);
+    fn assert_is_not_tainted_i64(val: i64);
+    fn assert_is_not_tainted_f32(val: f32);
+    fn assert_is_not_tainted_f64(val: f64);
+    fn js_log(value: f64);
+}
 
 #[link(wasm_import_module = "js")]
 unsafe extern "C" {
     fn getItem(level: i32) -> i32;
 }
-
-// fn getItem(level: i32) -> i32 {
-//     1
-// }
 
 fn should_be_tainted(level: i32) -> bool {
     (level & 0b11) == 0b11
@@ -55,6 +51,11 @@ impl TreeNode {
         right: Option<Rc<RefCell<TreeNode>>>,
     ) -> Rc<RefCell<TreeNode>> {
         let item = unsafe { getItem(level) };
+        if should_be_tainted(level) {
+            unsafe { assert_is_tainted_i32(item) };
+        } else {
+            unsafe { assert_is_not_tainted_i32(item) };
+        }
         Rc::new(RefCell::new(TreeNode { left, right, item }))
     }
 }

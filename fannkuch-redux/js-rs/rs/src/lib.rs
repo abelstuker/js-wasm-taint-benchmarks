@@ -3,30 +3,30 @@
 //
 use std::sync::atomic::{AtomicBool, Ordering};
 
-// #[link(wasm_import_module = "taint")]
-// unsafe extern "C" {
-//     fn taint_i32(val: i32) -> i32;
-//     fn taint_i64(val: i64) -> i64;
-//     fn taint_f32(val: f32) -> f32;
-//     fn taint_f64(val: f64) -> f64;
-//     fn sanitize_i32(val: i32) -> i32;
-//     fn sanitize_i64(val: i64) -> i64;
-//     fn sanitize_f32(val: f32) -> f32;
-//     fn sanitize_f64(val: f64) -> f64;
-//     fn assert_is_tainted_i32(val: i32);
-//     fn assert_is_tainted_i64(val: i64);
-//     fn assert_is_tainted_f32(val: f32);
-//     fn assert_is_tainted_f64(val: f64);
-//     fn assert_is_not_tainted_i32(val: i32);
-//     fn assert_is_not_tainted_i64(val: i64);
-//     fn assert_is_not_tainted_f32(val: f32);
-//     fn assert_is_not_tainted_f64(val: f64);
-//     fn check_is_tainted_i32(val: i32) -> bool;
-//     fn check_is_tainted_i64(val: i64) -> bool;
-//     fn check_is_tainted_f32(val: f32) -> bool;
-//     fn check_is_tainted_f64(val: f64) -> bool;
-//     fn js_log(value: f64);
-// }
+#[link(wasm_import_module = "taint")]
+unsafe extern "C" {
+    fn taint_i32(val: i32) -> i32;
+    fn taint_i64(val: i64) -> i64;
+    fn taint_f32(val: f32) -> f32;
+    fn taint_f64(val: f64) -> f64;
+    fn sanitize_i32(val: i32) -> i32;
+    fn sanitize_i64(val: i64) -> i64;
+    fn sanitize_f32(val: f32) -> f32;
+    fn sanitize_f64(val: f64) -> f64;
+    fn assert_is_tainted_i32(val: i32);
+    fn assert_is_tainted_i64(val: i64);
+    fn assert_is_tainted_f32(val: f32);
+    fn assert_is_tainted_f64(val: f64);
+    fn assert_is_not_tainted_i32(val: i32);
+    fn assert_is_not_tainted_i64(val: i64);
+    fn assert_is_not_tainted_f32(val: f32);
+    fn assert_is_not_tainted_f64(val: f64);
+    fn check_is_tainted_i32(val: i32) -> bool;
+    fn check_is_tainted_i64(val: i64) -> bool;
+    fn check_is_tainted_f32(val: f32) -> bool;
+    fn check_is_tainted_f64(val: f64) -> bool;
+    fn js_log(value: f64);
+}
 
 #[link(wasm_import_module = "js")]
 unsafe extern "C" {
@@ -43,6 +43,10 @@ fn fannkuch_redux(n: usize) -> i32 {
 
     let mut r = n;
 
+    for i in (0..n).step_by(3) {
+        perm1[i] = unsafe { taint_i32(perm1[i]) };
+    }
+
     loop {
         while r != 1 {
             count[r - 1] = r;
@@ -53,11 +57,7 @@ fn fannkuch_redux(n: usize) -> i32 {
             perm[i] = perm1[i];
         }
 
-        // for i in (0..n).step_by(3) {
-        //     perm1[i] = unsafe { taint_i32(perm1[i]) };
-        // }
-
-        let mut flips_count = 0; //unsafe { taint_i32(0) };
+        let mut flips_count = unsafe { taint_i32(0) };
 
         loop {
             let k = perm[0];
@@ -72,7 +72,7 @@ fn fannkuch_redux(n: usize) -> i32 {
                 perm[k as usize - i] = temp;
             }
             flips_count += 1;
-            // unsafe { assert_is_tainted_i32(flips_count) };
+            unsafe { assert_is_tainted_i32(flips_count) };
         }
 
         max_flips_count = unsafe { max(max_flips_count, flips_count) };
@@ -84,16 +84,16 @@ fn fannkuch_redux(n: usize) -> i32 {
 
         loop {
             if r == n {
-                // for idx in (0..n).step_by(3) {
-                //     unsafe { assert_is_tainted_i32(perm1[idx]) };
-                // }
+                for idx in (0..n).step_by(3) {
+                    unsafe { assert_is_tainted_i32(perm1[idx]) };
+                }
                 // for idx in (1..n).step_by(3) {
                 //     unsafe { assert_is_not_tainted_i32(perm1[idx]) };
                 // }
                 // for idx in (2..n).step_by(3) {
                 //     unsafe { assert_is_not_tainted_i32(perm1[idx]) };
                 // }
-                return max_flips_count; // unsafe { sanitize_i32(max_flips_count) };
+                return unsafe { sanitize_i32(max_flips_count) };
             }
 
             let perm0 = perm1[0];

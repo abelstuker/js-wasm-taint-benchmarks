@@ -101,11 +101,6 @@ function benchmark(n) {
 }
 
 function getExpectedResult() {
-    // in c, byte_acc is a `char`, and
-    // overflows a couple of times in the
-    // benchmark, while this does not
-    // happen in js. as a result,
-    // the result value differs in c and js
     return 20213330;
 }
 

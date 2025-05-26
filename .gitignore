@@ -3,3 +3,5 @@ target
 Cargo.lock
 instrumented
 benchmark-results
+k-nucleotide
+*output*

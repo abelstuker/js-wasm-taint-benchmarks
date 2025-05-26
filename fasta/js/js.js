@@ -12,7 +12,7 @@ const benchmarkName = "fasta";
 const Taint = globalThis.Taint;
 
 function writeFastaHeader(id, desc) {
-    console.log(">" + id + " " + desc);
+    // console.log(">" + id + " " + desc);
 }
 
 function writeFasta(str, from) {
@@ -46,7 +46,7 @@ function writeFasta(str, from) {
         Taint.assertIsNotTainted(ch);
     }
 
-    // console.log(...str.slice(from, str.length - 1));
+    // console.log(...str.slice(from, str.length - 1).join(""));
 }
 
 var last = 42;
@@ -232,9 +232,6 @@ function benchmark(n) {
 function getExpectedResult() {
     return 0;
 }
-
-console.assert(typeof benchmark == "function", "'benchmark' is not a function");
-console.assert(typeof benchmarkName == "string", "'benchmarkName' is not defined or invalid");
 
 export default function main(n = 1000000) {
     const result = benchmark(n);

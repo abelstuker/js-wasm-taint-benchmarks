@@ -147,7 +147,13 @@ function advance() {
         const x1 = get_x(i);
         const y1 = get_y(i);
         const z1 = get_z(i);
+        Taint.assertIsTainted(x1);
+        Taint.assertIsTainted(y1);
+        Taint.assertIsTainted(z1);
         for (let j = i + 1; j < 5; ++j) {
+            Taint.assertIsTainted(get_x(j));
+            Taint.assertIsTainted(get_y(j));
+            Taint.assertIsTainted(get_z(j));
             const dx = x1 - get_x(j);
             let R = dx * dx;
             const dy = y1 - get_y(j);
@@ -162,6 +168,14 @@ function advance() {
             set_vx(j, get_vx(j) + dx * get_mass(i) * mag);
             set_vy(j, get_vy(j) + dy * get_mass(i) * mag);
             set_vz(j, get_vz(j) + dz * get_mass(i) * mag);
+            Taint.assertIsTainted(get_vx(i));
+            Taint.assertIsTainted(get_vy(i));
+            Taint.assertIsTainted(get_vz(i));
+            Taint.assertIsTainted(get_vx(j));
+            Taint.assertIsTainted(get_vy(j));
+            Taint.assertIsTainted(get_vz(j));
+            Taint.assertIsNotTainted(get_mass(i));
+            Taint.assertIsNotTainted(get_mass(j));
         }
     }
 
@@ -199,6 +213,12 @@ function offset_momentum() {
     set_vx(0, -px / solar_mass);
     set_vy(0, -py / solar_mass);
     set_vz(0, -pz / solar_mass);
+
+    for (let i = 1; i < 5; ++i) {
+        Taint.assertIsNotTainted(get_vx(i));
+        Taint.assertIsNotTainted(get_vy(i));
+        Taint.assertIsNotTainted(get_vz(i));
+    }
 }
 
 function benchmark(n) {

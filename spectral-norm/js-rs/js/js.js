@@ -12,6 +12,9 @@ const JSImport = {
 };
 
 function a_js(memory, i_ptr, j_ptr, result_ptr) {
+    Taint.assertIsNotTainted(i_ptr);
+    Taint.assertIsNotTainted(j_ptr);
+    Taint.assertIsNotTainted(result_ptr);
     const i0 = new Uint32Array(memory.buffer, i_ptr, 2)[0];
     const i1 = new Uint32Array(memory.buffer, i_ptr, 2)[1];
     const j0 = new Uint32Array(memory.buffer, j_ptr, 2)[0];
